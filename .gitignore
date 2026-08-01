@@ -1,0 +1,7 @@
+.system/
+.source/
+.DS_Store
+.pytest_cache
+.tests/
+server/__pycache__/
+*.pyc
