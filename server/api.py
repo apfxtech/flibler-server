@@ -45,6 +45,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
     app = FastAPI(
         lifespan=lifespan,
+        title="ApertureFox flipbler",
         description="Flipper asembler for qUnleashed",
         version=__version__,
         redoc_url=None,
