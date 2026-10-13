@@ -1,0 +1,20 @@
+[Unit]
+Description=qUnleashed catalog and build server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=catalog
+Group=catalog
+WorkingDirectory=/opt/qunleashed-catalog
+EnvironmentFile=/opt/qunleashed-catalog/.env
+ExecStart=/opt/qunleashed-catalog/.venv/bin/python -m server
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/qunleashed-catalog
+
+[Install]
+WantedBy=multi-user.target
