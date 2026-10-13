@@ -226,7 +226,7 @@ def build_v0_router(state) -> APIRouter:
         if state.stats is not None and item is not None:
             state.stats.record(item_id=item["id"], version_id=version_id, family=item["family"], target=target, api=api, client_id=client_hint(request))
         path = state.artifact_file(ready["artifact_path"])
-        return FileResponse(path, media_type="application/octet-stream", filename=ready["artifact_name"], headers=state.signature_headers(path))
+        return state.artifact_response(request, path, ready["artifact_name"], ready["sha256"])
 
     @router.get("/application/version/{version_id}/bundle")
     async def bundle(version_id: str):

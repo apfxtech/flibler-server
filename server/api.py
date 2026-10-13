@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 from . import __version__
 from .archive import Archive
@@ -123,6 +123,20 @@ class AppState:
         if self.signer is None:
             return {}
         return self.signer.headers_for(path)
+
+    def artifact_response(self, request: Request, path: Path, filename: str, sha256: str | None) -> Response:
+        """A counted download. The browser may keep the file but must ask
+        again every time, so each install reaches the journal; an unchanged
+        file costs a 304 instead of the body."""
+        headers = {"Cache-Control": "no-cache"}
+        if sha256:
+            etag = f'"{sha256}"'
+            headers["ETag"] = etag
+            wanted = {tag.strip() for tag in request.headers.get("if-none-match", "").split(",")}
+            if etag in wanted:
+                return Response(status_code=304, headers=headers)
+        headers.update(self.signature_headers(path))
+        return FileResponse(path, media_type="application/octet-stream", filename=filename, headers=headers)
 
     def record_download(self, job, client_id: str) -> None:
         if self.stats is None or not job["item_id"]:

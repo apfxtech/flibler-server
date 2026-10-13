@@ -4,7 +4,7 @@ import re
 from urllib.parse import urlparse
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from ..auth import authenticate
 from .. import builder as builder_module
@@ -114,7 +114,7 @@ def build_router(state) -> APIRouter:
         )
 
     @router.get("/builds/{job_id}/artifact")
-    async def build_artifact(job_id: str, client_id: str = Depends(auth_dep)):
+    async def build_artifact(job_id: str, request: Request, client_id: str = Depends(auth_dep)):
         job = get_job(job_id, client_id)
         if job["status"] == STATUS_FAILED:
             raise HTTPException(status_code=409, detail=job["error"] or "Build failed")
@@ -123,14 +123,8 @@ def build_router(state) -> APIRouter:
         path = state.artifact_file(job["artifact_path"])
         if path is None:
             raise HTTPException(status_code=410, detail="Artifact expired")
-        headers = state.signature_headers(path)
         state.record_download(job, client_id)
-        return FileResponse(
-            path,
-            media_type="application/octet-stream",
-            filename=job["artifact_name"] or path.name,
-            headers=headers,
-        )
+        return state.artifact_response(request, path, job["artifact_name"] or path.name, None)
 
     @router.delete("/builds/{job_id}")
     async def cancel_build(job_id: str, client_id: str = Depends(auth_dep)):

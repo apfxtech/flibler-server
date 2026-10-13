@@ -7,7 +7,7 @@ import re
 
 import yaml
 from fastapi import APIRouter, HTTPException, Request, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from ..db import loads
 from ..query import ListQuery
@@ -273,7 +273,7 @@ def build_v1_router(state) -> APIRouter:
         if state.stats is not None and item is not None:
             state.stats.record(item_id=item["id"], version_id=version_id, family=family, target=target, api=api, client_id=client_hint(request))
         path = state.artifact_file(ready["artifact_path"])
-        return FileResponse(path, media_type="application/octet-stream", filename=ready["artifact_name"], headers=state.signature_headers(path))
+        return state.artifact_response(request, path, ready["artifact_name"], ready["sha256"])
 
     @router.get("/{root}/version/{version_id}/bundle")
     async def bundle(root: str, version_id: str):
@@ -317,14 +317,17 @@ def build_v1_router(state) -> APIRouter:
             })
         if state.stats is not None and item is not None:
             state.stats.record(item_id=item["id"], version_id=version_id, family=family, target="", api="", client_id=client_hint(request))
-        return {
-            "files": files,
-            "manifest_merge": {
-                "path": "/ext/dolphin/manifest.txt",
-                "format": "dolphin",
-                "entry": entry,
+        return JSONResponse(
+            {
+                "files": files,
+                "manifest_merge": {
+                    "path": "/ext/dolphin/manifest.txt",
+                    "format": "dolphin",
+                    "entry": entry,
+                },
             },
-        }
+            headers={"Cache-Control": "no-cache"},
+        )
 
     @router.get("/{root}/version/{version_id}/file/{name:path}")
     async def plan_file(root: str, version_id: str, name: str):
