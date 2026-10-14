@@ -228,6 +228,8 @@ def build_v1_router(state) -> APIRouter:
         base = present.base_url(request)
         counts = listing.count_by_category(family, target, api)
         rows = state.db.all("SELECT * FROM categories WHERE family = ? ORDER BY parent_id IS NOT NULL, priority, name", (family,))
+        if family != "application":
+            rows = [row for row in rows if counts.get(row["id"], 0) > 0]
         return [present.category_json(row, base, counts.get(row["id"], 0)) for row in rows]
 
     @router.get("/{root}")
